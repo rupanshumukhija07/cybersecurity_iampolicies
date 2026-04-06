@@ -1,0 +1,81 @@
+Manual Guide:
+1.The Guide to Lambda Function:
+The Lambda function functions as the key detector of the project. AWS Config calls it every time an IAM policy is changed to check if the policy has the risky pattern:
+Effect: Allow 
+Action: * 
+Resource: *
+When this kind of pattern is found, the function sends the policy back to AWS Config through put_evaluations. The policy is then marked as NON_COMPLIANT. After that, AWS Config will update the rule dashboard and can be used to send email alerts or start fixing things.
+2. Required AWS Services :
+Prior to the run of the Lambda, the following AWS services should be configured: 
+•	AWS Config was configured on the same region as the Lambda. 
+•	AWS IAM policy developed to test.
+•	Lambda was set up in AWS.
+•	AWS Config rule that is custom and linked to the Lambda.
+•	You can get notifications by signing up for SNS topics and email.
+•	Invocation permissions for the Lambda execution role and the Config invoke permission.
+3. Region Requirement 
+The resources need to be within the same region of AWS, in your project that is the us-east-1. AWS Config should be capturing IAM global resources to enable it to identify customer-managed IAM policies.
+4.Lambda Code File 
+Save the code in a file named:
+bash 
+lambda_function.py 
+The Lambda handler should be:
+bash 
+lambda_function.lambda_handler
+When the rule is triggered, AWS Lambda will call the lambda_handler() function in lambda_function.py.
+5.IAM Role for Lambda :
+The Lambda execution role must allow the function to:
+Write logs to CloudWatch
+Call AWS Config put_evaluations
+A basic role should include permissions similar to:
+logs:CreateLogGroup
+logs:CreateLogStream
+logs:PutLogEvents
+config:PutEvaluations
+The function can't send compliance results back to AWS Config without these permissions.
+6.Create the Lambda Function In the AWS Console: Go to AWS Lambda.
+Click Create function.
+Choose Author from scratch.
+Function name: IAM-Policy-Wildcard-Detector
+Runtime: Python 3.x
+Role of execution:
+You can either use a new role with basic Lambda permissions or attach your own role.
+Click Create function.
+7. Upload the Code
+Open the Lambda function.
+In the Code tab, open lambda_function.py.
+Paste the Lambda code.
+Click Deploy.
+8.Required Lambda Handler Behavior 
+When AWS Config runs the function, it sends an event that has
+invokingEvent
+resultToken
+ruleParameters if any
+The Lambda must:
+Parse event["invokingEvent"]
+Extract configurationItem
+Read the IAM policyDocument
+Check each statement
+Decide whether the policy is compliant or non-compliant
+Send the result to AWS Config using put_evaluations()
+9.	Connect Lambda to AWS Config After the Lambda is deployed:
+Go to AWS Config.
+Create or edit your custom rule.
+Choose Custom Lambda rule.
+Select the Lambda function: IAM-Policy-Wildcard-Detector
+Set the trigger to Configuration changes.
+Scope it to: AWS::IAM::Policy
+Save the rule.
+This is why AWS Config calls your Lambda every time the policy changes.
+10. Add Invoke Permission to AWS Config. AWS Config needs permission to invoke the Lambda.
+In the Lambda console: Open the Lambda.
+Go to Configuration → Permissions.
+Add a resource-based policy or permission.
+Principal: config.amazonaws.com
+Action: lambda:InvokeFunction
+Without this, AWS Config cannot call the function.
+
+
+
+
+
